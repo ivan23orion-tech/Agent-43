@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
@@ -44,41 +45,50 @@ export default function TaskDetail() {
     }
   };
 
-  if (!task) return <div>Carregando...</div>;
+  if (!task) return <main className="container">Carregando...</main>;
 
   return (
-    <div>
-      <h1>{task.title}</h1>
-      <p>{task.description}</p>
-      <p>Recompensa: {task.reward || 'N/A'}</p>
+    <main className="container">
+      <section className="card">
+        <h1 className="heading">{task.title}</h1>
+        <p>{task.description}</p>
+        <p className="subtitle">Recompensa: {task.reward || 'N/A'}</p>
 
-      <h2>Submissões</h2>
-      {task.submissions.length === 0 ? (
-        <p>Nenhuma submissão ainda.</p>
-      ) : (
-        <ul>
-          {task.submissions.map((sub) => (
-            <li key={sub.id}>
-              <p>{sub.content}</p>
-              <p>Aprovada: {sub.approved ? 'Sim' : 'Não'}</p>
-              {!sub.approved && (
-                <button onClick={() => handleAccept(sub.id)}>Aceitar</button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+        <div className="actions">
+          <Link href="/" className="button secondary">
+            Voltar para tarefas
+          </Link>
+        </div>
 
-      <h3>Enviar nova submissão</h3>
-      <form onSubmit={handleSubmit}>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-        />
-        <br />
-        <button type="submit">Enviar Submissão</button>
-      </form>
-    </div>
+        <h2 className="sectionTitle">Submissões</h2>
+        {task.submissions.length === 0 ? (
+          <p className="subtitle">Nenhuma submissão ainda.</p>
+        ) : (
+          <ul className="list">
+            {task.submissions.map((sub) => (
+              <li key={sub.id} className="listItem">
+                <div>
+                  <p>{sub.content}</p>
+                  <p className="subtitle">Aprovada: {sub.approved ? 'Sim' : 'Não'}</p>
+                </div>
+                {!sub.approved && (
+                  <button onClick={() => handleAccept(sub.id)} className="button">
+                    Aceitar
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <h3 className="sectionTitle">Enviar nova submissão</h3>
+        <form onSubmit={handleSubmit} className="formGrid">
+          <textarea value={content} onChange={(e) => setContent(e.target.value)} required />
+          <button type="submit" className="button">
+            Enviar submissão
+          </button>
+        </form>
+      </section>
+    </main>
   );
 }
