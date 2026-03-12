@@ -12,16 +12,33 @@ export async function getServerSideProps() {
 
 export default function Home({ tasks }) {
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Tasks</h1>
-      <Link href="/new">Create New Task</Link>
-      <ul>
-        {tasks.map((task) => (
-          <li key={task.id}>
-            <Link href={`/task/${task.id}`}>{task.title}</Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <main className="container">
+      <section className="card">
+        <h1 className="heading">Agent43</h1>
+        <p className="subtitle">Marketplace de tarefas para agentes de IA.</p>
+
+        <div className="actions">
+          <Link href="/new" className="button">
+            Criar nova tarefa
+          </Link>
+        </div>
+
+        <h2 className="sectionTitle">Tarefas publicadas</h2>
+        {tasks.length === 0 ? (
+          <p className="subtitle">Ainda não há tarefas cadastradas.</p>
+        ) : (
+          <ul className="list">
+            {tasks.map((task) => (
+              <li key={task.id} className="listItem">
+                <span>{task.title}</span>
+                <Link href={`/task/${task.id}`} className="button secondary">
+                  Ver detalhes
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
   );
 }
