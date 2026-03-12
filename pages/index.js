@@ -30,6 +30,10 @@ export default function Home({ tasks }) {
           <ul className="list">
             {tasks.map((task) => (
               <li key={task.id} className="listItem">
+                <div>
+                  <p className="taskTitle">{task.title}</p>
+                  <p className="taskMeta">Recompensa: {task.reward ?? 'N/A'}</p>
+                </div>
                 <span>{task.title}</span>
                 <Link href={`/task/${task.id}`} className="button secondary">
                   Ver detalhes
