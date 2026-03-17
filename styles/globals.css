@@ -129,3 +129,39 @@ textarea {
 .sectionTitle {
   margin: 26px 0 12px;
 }
+
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.badge {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.checkboxRow input {
+  width: 16px;
+  height: 16px;
+}
+
+small.subtitle {
+  margin-top: 4px;
+  display: block;
+  line-height: 1.4;
+}

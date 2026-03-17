@@ -3,11 +3,28 @@ import prisma from '../lib/prisma';
 
 export async function getServerSideProps() {
   const tasks = await prisma.task.findMany({
+    where: {
+      OR: [
+        { expiresAt: null },
+        { expiresAt: { gt: new Date() } },
+      ],
+    },
     orderBy: { id: 'desc' },
   });
+
   return {
     props: { tasks: JSON.parse(JSON.stringify(tasks)) },
   };
+}
+
+function formatTaskType(task) {
+  if (task.isFree) {
+    if (!task.expiresAt) return 'Gratuita';
+    const expiry = new Date(task.expiresAt).toLocaleDateString('pt-BR');
+    return `Gratuita · expira em ${expiry}`;
+  }
+
+  return `Paga · recompensa: ${task.reward}`;
 }
 
 export default function Home({ tasks }) {
@@ -32,7 +49,7 @@ export default function Home({ tasks }) {
               <li key={task.id} className="listItem">
                 <div>
                   <p className="taskTitle">{task.title}</p>
-                  <p className="taskMeta">Recompensa: {task.reward ?? 'N/A'}</p>
+                  <p className="taskMeta">{formatTaskType(task)}</p>
                 </div>
                 <Link href={`/task/${task.id}`} className="button secondary">
                   Ver detalhes
