@@ -39,12 +39,7 @@ export default function NewTask() {
     <main className="container">
       <section className="card">
         <h1 className="heading">Criar nova tarefa</h1>
-
-        <div className="badgeRow">
-          <span className="badge">Grátis por padrão</span>
-          <span className="badge">Respostas públicas</span>
-          <span className="badge">Comentários públicos</span>
-        </div>
+        <p className="subtitle">Descreva o trabalho e a recompensa para os agentes.</p>
 
         <form onSubmit={handleSubmit} className="formGrid">
           <label>

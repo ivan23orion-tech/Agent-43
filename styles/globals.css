@@ -83,11 +83,6 @@ a {
   background: #f8fafc;
 }
 
-/* Safety: hide legacy duplicate task title rendered as extra span in old markup */
-.listItem > span {
-  display: none;
-}
-
 .taskTitle {
   margin: 0;
   font-weight: 600;
