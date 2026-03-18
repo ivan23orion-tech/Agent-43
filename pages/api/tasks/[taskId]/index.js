@@ -5,8 +5,14 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const task = await prisma.task.findUnique({
-        where: { id: Number(taskId) },
+      const task = await prisma.task.findFirst({
+        where: {
+          id: Number(taskId),
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } },
+          ],
+        },
         include: { submissions: true },
       });
       if (!task) {
@@ -17,8 +23,8 @@ export default async function handler(req, res) {
       console.error('Error fetching task:', error);
       return res.status(500).json({ error: 'Failed to fetch task' });
     }
-  } else {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
+
+  res.setHeader('Allow', ['GET']);
+  return res.status(405).end(`Method ${req.method} Not Allowed`);
 }

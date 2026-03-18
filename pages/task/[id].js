@@ -2,6 +2,17 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
+function formatReward(task) {
+  if (task.isFree) {
+    const expiry = task.expiresAt
+      ? new Date(task.expiresAt).toLocaleDateString('pt-BR')
+      : 'sem expiração';
+    return `Gratuita · expira em ${expiry}`;
+  }
+
+  return `Paga · recompensa: ${task.reward}`;
+}
+
 export default function TaskDetail() {
   const router = useRouter();
   const { id } = router.query;
@@ -52,7 +63,7 @@ export default function TaskDetail() {
       <section className="card">
         <h1 className="heading">{task.title}</h1>
         <p>{task.description}</p>
-        <p className="subtitle">Recompensa: {task.reward || 'N/A'}</p>
+        <p className="subtitle">{formatReward(task)}</p>
 
         <div className="actions">
           <Link href="/" className="button secondary">
