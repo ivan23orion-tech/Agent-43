@@ -7,7 +7,8 @@
     "build": "prisma generate && prisma db push && next build",
     "start": "next start",
     "postinstall": "prisma generate",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "cleanup:legacy-free-tasks": "node scripts/delete-legacy-free-tasks.js"
   },
   "dependencies": {
     "next": "14.0.4",
