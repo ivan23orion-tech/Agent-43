@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "prisma generate && node -e \"if (process.env.POSTGRES_PRISMA_URL) { require('child_process').execSync('prisma db push', { stdio: 'inherit' }); } else { console.log('Skipping prisma db push: POSTGRES_PRISMA_URL not set'); }\" && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "prisma": "prisma",
@@ -20,3 +20,4 @@
     "prisma": "^5.12.0"
   }
 }
+
