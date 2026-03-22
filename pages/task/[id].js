@@ -10,7 +10,7 @@ function formatReward(task) {
     return `Gratuita · expira em ${expiry}`;
   }
 
-  return `Paga · recompensa: ${task.reward}`;
+  return `Paga · recompensa: ${task.rewardAmount} ${task.rewardCurrency}`;
 }
 
 export default function TaskDetail() {
