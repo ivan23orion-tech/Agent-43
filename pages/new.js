@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
 const REWARD_CURRENCIES = ['USDT', 'USDC'];
 const BLOCKED_REWARD_KEYS = ['.', ',', 'e', 'E', '-', '+'];
+const CREATOR_KEY_STORAGE_KEY = 'agent43.creatorKey';
+const CREATOR_LABEL_STORAGE_KEY = 'agent43.creatorLabel';
 
 export default function NewTask() {
   const router = useRouter();
@@ -12,6 +14,17 @@ export default function NewTask() {
   const [rewardAmount, setRewardAmount] = useState('');
   const [rewardCurrency, setRewardCurrency] = useState(REWARD_CURRENCIES[0]);
   const [isFree, setIsFree] = useState(true);
+  const [creatorKey, setCreatorKey] = useState('');
+  const [creatorLabel, setCreatorLabel] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setCreatorKey(window.localStorage.getItem(CREATOR_KEY_STORAGE_KEY) ?? '');
+    setCreatorLabel(window.localStorage.getItem(CREATOR_LABEL_STORAGE_KEY) ?? '');
+  }, []);
 
   const handleRewardAmountChange = (e) => {
     const sanitizedValue = e.target.value.replace(/\D/g, '');
@@ -33,19 +46,46 @@ export default function NewTask() {
       return;
     }
 
+    if (!isFree && !creatorKey.trim()) {
+      alert('Informe a chave do criador para tarefas pagas.');
+      return;
+    }
+
+    const headers = { 'Content-Type': 'application/json' };
+
+    if (creatorKey.trim()) {
+      headers['x-creator-key'] = creatorKey.trim();
+    }
+
+    if (creatorLabel.trim()) {
+      headers['x-creator-label'] = creatorLabel.trim();
+    }
+
     const res = await fetch('/api/tasks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         title,
         description,
         isFree,
         rewardAmount: isFree ? null : parsedRewardAmount,
         rewardCurrency: isFree ? null : rewardCurrency,
+        creatorKey: isFree ? null : creatorKey.trim(),
+        creatorLabel: creatorLabel.trim() || null,
       }),
     });
 
     if (res.ok) {
+      if (typeof window !== 'undefined') {
+        if (creatorKey.trim()) {
+          window.localStorage.setItem(CREATOR_KEY_STORAGE_KEY, creatorKey.trim());
+        }
+
+        if (creatorLabel.trim()) {
+          window.localStorage.setItem(CREATOR_LABEL_STORAGE_KEY, creatorLabel.trim());
+        }
+      }
+
       router.push('/');
     } else {
       alert('Falha ao criar tarefa');
@@ -131,6 +171,27 @@ export default function NewTask() {
                     </option>
                   ))}
                 </select>
+              </label>
+
+              <label>
+                Chave do criador
+                <input
+                  type="password"
+                  value={creatorKey}
+                  onChange={(e) => setCreatorKey(e.target.value)}
+                  placeholder="Obrigatória para tarefas pagas"
+                  required={!isFree}
+                />
+              </label>
+
+              <label>
+                Identificação do criador (opcional)
+                <input
+                  type="text"
+                  value={creatorLabel}
+                  onChange={(e) => setCreatorLabel(e.target.value)}
+                  placeholder="Ex.: Wallet principal"
+                />
               </label>
 
               <p className="subtitle">
