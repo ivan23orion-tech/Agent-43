@@ -1,6 +1,9 @@
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+
+const CREATOR_KEY_STORAGE_KEY = 'agent43.creatorKey';
+const CREATOR_LABEL_STORAGE_KEY = 'agent43.creatorLabel';
 
 function formatReward(task) {
   if (task.isFree) {
@@ -13,23 +16,61 @@ function formatReward(task) {
   return `Paga · recompensa: ${task.rewardAmount} ${task.rewardCurrency}`;
 }
 
+function buildCreatorHeaders(creatorKey, creatorLabel) {
+  const headers = {};
+
+  if (creatorKey) {
+    headers['x-creator-key'] = creatorKey;
+  }
+
+  if (creatorLabel) {
+    headers['x-creator-label'] = creatorLabel;
+  }
+
+  return headers;
+}
+
 export default function TaskDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [task, setTask] = useState(null);
   const [content, setContent] = useState('');
+  const [creatorKey, setCreatorKey] = useState('');
+  const [creatorLabel, setCreatorLabel] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
 
   useEffect(() => {
-    if (id) {
-      fetch(`/api/tasks/${id}`)
-        .then((res) => res.json())
-        .then((data) => setTask(data));
+    if (typeof window === 'undefined') {
+      return;
     }
-  }, [id]);
+
+    setCreatorKey(window.localStorage.getItem(CREATOR_KEY_STORAGE_KEY) ?? '');
+    setCreatorLabel(window.localStorage.getItem(CREATOR_LABEL_STORAGE_KEY) ?? '');
+  }, []);
+
+  const creatorHeaders = useMemo(
+    () => buildCreatorHeaders(creatorKey, creatorLabel),
+    [creatorKey, creatorLabel],
+  );
+
+  const fetchTask = async () => {
+    if (!id) {
+      return;
+    }
+
+    const res = await fetch(`/api/tasks/${id}`, {
+      headers: creatorHeaders,
+    });
+    const data = await res.json();
+    setTask(data);
+  };
+
+  useEffect(() => {
+    fetchTask();
+  }, [id, creatorHeaders]);
 
   const refreshTask = async () => {
-    const updated = await fetch(`/api/tasks/${id}`).then((r) => r.json());
-    setTask(updated);
+    await fetchTask();
   };
 
   const handleSubmit = async (e) => {
@@ -48,15 +89,46 @@ export default function TaskDetail() {
   };
 
   const handleAccept = async (submissionId) => {
-    const res = await fetch(`/api/submissions/${submissionId}/accept`, { method: 'POST' });
+    const res = await fetch(`/api/submissions/${submissionId}/accept`, {
+      method: 'POST',
+      headers: creatorHeaders,
+    });
+
     if (res.ok) {
       await refreshTask();
+    } else if (res.status === 403) {
+      alert('Somente o criador autenticado pode aceitar submissões desta tarefa paga.');
     } else {
       alert('Falha ao aceitar submissão');
     }
   };
 
+  const handleCreatorAccessSubmit = async (e) => {
+    e.preventDefault();
+
+    if (typeof window !== 'undefined') {
+      if (creatorKey) {
+        window.localStorage.setItem(CREATOR_KEY_STORAGE_KEY, creatorKey);
+      } else {
+        window.localStorage.removeItem(CREATOR_KEY_STORAGE_KEY);
+      }
+
+      if (creatorLabel) {
+        window.localStorage.setItem(CREATOR_LABEL_STORAGE_KEY, creatorLabel);
+      } else {
+        window.localStorage.removeItem(CREATOR_LABEL_STORAGE_KEY);
+      }
+    }
+
+    await refreshTask();
+    setAuthMessage('Credenciais atualizadas.');
+  };
+
   if (!task) return <main className="container">Carregando...</main>;
+
+  const canViewSubmissions = task.isFree || task.creatorAuthenticated;
+  const canAcceptSubmission = task.isFree || task.creatorAuthenticated;
+  const submissions = task.submissions ?? [];
 
   return (
     <main className="container">
@@ -65,6 +137,46 @@ export default function TaskDetail() {
         <p>{task.description}</p>
         <p className="subtitle">{formatReward(task)}</p>
 
+        {!task.isFree && (
+          <section className="card" style={{ marginTop: '1rem' }}>
+            <h2 className="sectionTitle">Acesso do criador</h2>
+            <p className="subtitle">
+              Tarefas pagas exibem as respostas apenas para o criador autenticado.
+            </p>
+            <form onSubmit={handleCreatorAccessSubmit} className="formGrid">
+              <label>
+                Chave do criador
+                <input
+                  type="password"
+                  value={creatorKey}
+                  onChange={(e) => setCreatorKey(e.target.value)}
+                  placeholder="Informe sua chave privada de criador"
+                />
+              </label>
+
+              <label>
+                Identificação do criador (opcional)
+                <input
+                  type="text"
+                  value={creatorLabel}
+                  onChange={(e) => setCreatorLabel(e.target.value)}
+                  placeholder="Ex.: João / Wallet principal"
+                />
+              </label>
+
+              <div className="actions">
+                <button type="submit" className="button secondary">
+                  Atualizar acesso
+                </button>
+              </div>
+            </form>
+            {authMessage ? <p className="subtitle">{authMessage}</p> : null}
+            {task.submissionsPrivate && (
+              <p className="subtitle">Respostas privadas do criador.</p>
+            )}
+          </section>
+        )}
+
         <div className="actions">
           <Link href="/" className="button secondary">
             Voltar para tarefas
@@ -72,17 +184,19 @@ export default function TaskDetail() {
         </div>
 
         <h2 className="sectionTitle">Submissões</h2>
-        {task.submissions.length === 0 ? (
+        {!canViewSubmissions ? (
+          <p className="subtitle">Respostas privadas do criador.</p>
+        ) : submissions.length === 0 ? (
           <p className="subtitle">Nenhuma submissão ainda.</p>
         ) : (
           <ul className="list">
-            {task.submissions.map((sub) => (
+            {submissions.map((sub) => (
               <li key={sub.id} className="listItem">
                 <div>
                   <p>{sub.content}</p>
                   <p className="subtitle">Aprovada: {sub.approved ? 'Sim' : 'Não'}</p>
                 </div>
-                {!sub.approved && (
+                {!sub.approved && canAcceptSubmission && (
                   <button onClick={() => handleAccept(sub.id)} className="button">
                     Aceitar
                   </button>

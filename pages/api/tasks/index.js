@@ -1,10 +1,13 @@
-import crypto from 'crypto';
 import prisma from '../../../lib/prisma';
+import {
+  CREATOR_KEY_HEADER_NAMES,
+  CREATOR_LABEL_HEADER_NAMES,
+  getCreatorCredentials,
+  hashCreatorKey,
+} from '../../../lib/task-access';
 
 const FREE_TASK_DURATION_DAYS = 3;
 const ALLOWED_REWARD_CURRENCIES = ['USDT', 'USDC'];
-const CREATOR_KEY_HEADER_NAMES = ['x-creator-key', 'creator-key'];
-const CREATOR_LABEL_HEADER_NAMES = ['x-creator-label', 'creator-label'];
 
 function getFreeTaskExpiryDate() {
   const expiresAt = new Date();
@@ -24,48 +27,6 @@ function parseRewardAmount(value) {
   }
 
   return numericValue;
-}
-
-function readHeaderValue(req, headerNames) {
-  for (const headerName of headerNames) {
-    const value = req.headers[headerName];
-
-    if (Array.isArray(value)) {
-      const firstNonEmptyValue = value.find((headerValue) => typeof headerValue === 'string' && headerValue.trim());
-      if (firstNonEmptyValue) {
-        return firstNonEmptyValue.trim();
-      }
-      continue;
-    }
-
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
-
-function normalizeOptionalString(value) {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const trimmedValue = value.trim();
-  return trimmedValue ? trimmedValue : null;
-}
-
-function getCreatorCredentials(req) {
-  const creatorKey = normalizeOptionalString(req.body?.creatorKey)
-    ?? readHeaderValue(req, CREATOR_KEY_HEADER_NAMES);
-  const creatorLabel = normalizeOptionalString(req.body?.creatorLabel)
-    ?? readHeaderValue(req, CREATOR_LABEL_HEADER_NAMES);
-
-  return { creatorKey, creatorLabel };
-}
-
-function hashCreatorKey(creatorKey) {
-  return crypto.createHash('sha256').update(creatorKey).digest('hex');
 }
 
 export default async function handler(req, res) {
@@ -129,7 +90,7 @@ export default async function handler(req, res) {
 
     if (!creatorKey) {
       return res.status(400).json({
-        error: 'Tarefas pagas exigem creatorKey via header HTTP ou campo separado',
+        error: `Tarefas pagas exigem creatorKey via headers ${CREATOR_KEY_HEADER_NAMES.join(', ')} ou campo separado`,
       });
     }
 
