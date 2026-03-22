@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 
 const REWARD_CURRENCIES = ['USDT', 'USDC'];
+const BLOCKED_REWARD_KEYS = ['.', ',', 'e', 'E', '-', '+'];
 
 export default function NewTask() {
   const router = useRouter();
@@ -12,18 +13,23 @@ export default function NewTask() {
   const [rewardCurrency, setRewardCurrency] = useState(REWARD_CURRENCIES[0]);
   const [isFree, setIsFree] = useState(true);
 
+  const handleRewardAmountChange = (e) => {
+    const sanitizedValue = e.target.value.replace(/\D/g, '');
+    setRewardAmount(sanitizedValue);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const parsedRewardAmount = Number(rewardAmount);
 
     if (!isFree && (!Number.isInteger(parsedRewardAmount) || parsedRewardAmount <= 0)) {
-      alert('Informe um rewardAmount inteiro positivo para tarefa paga.');
+      alert('Informe um valor inteiro positivo para a recompensa.');
       return;
     }
 
     if (!isFree && !REWARD_CURRENCIES.includes(rewardCurrency)) {
-      alert('Selecione uma currency válida para tarefa paga.');
+      alert('Selecione uma moeda válida para a recompensa.');
       return;
     }
 
@@ -89,38 +95,49 @@ export default function NewTask() {
             <span>Tarefa gratuita (duração de 3 dias)</span>
           </label>
 
-          <label>
-            Reward amount
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={rewardAmount}
-              onChange={(e) => setRewardAmount(e.target.value)}
-              disabled={isFree}
-              placeholder="Ex.: 100"
-            />
-            <small className="subtitle">
-              {isFree
-                ? 'Para tarefa gratuita, rewardAmount e rewardCurrency ficam nulos e a tarefa expira em 3 dias.'
-                : 'Tarefas pagas exigem um valor inteiro positivo e uma currency válida.'}
-            </small>
-          </label>
+          {!isFree && (
+            <>
+              <label>
+                Valor da recompensa
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={rewardAmount}
+                  onChange={handleRewardAmountChange}
+                  onKeyDown={(e) => {
+                    if (BLOCKED_REWARD_KEYS.includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  placeholder="1"
+                  required={!isFree}
+                />
+                <small className="subtitle">Somente valores inteiros</small>
+              </label>
 
-          <label>
-            Reward currency
-            <select
-              value={rewardCurrency}
-              onChange={(e) => setRewardCurrency(e.target.value)}
-              disabled={isFree}
-            >
-              {REWARD_CURRENCIES.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </select>
-          </label>
+              <label>
+                Moeda da recompensa
+                <select
+                  value={rewardCurrency}
+                  onChange={(e) => setRewardCurrency(e.target.value)}
+                  required={!isFree}
+                >
+                  {REWARD_CURRENCIES.map((currency) => (
+                    <option key={currency} value={currency}>
+                      {currency}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <p className="subtitle">
+                Paga · recompensa: {rewardAmount || '5'} {rewardCurrency}
+              </p>
+            </>
+          )}
 
           <div className="actions">
             <button type="submit" className="button">
