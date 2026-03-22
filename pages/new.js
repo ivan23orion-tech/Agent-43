@@ -2,18 +2,28 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
+const REWARD_CURRENCIES = ['USDT', 'USDC'];
+
 export default function NewTask() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [reward, setReward] = useState('');
+  const [rewardAmount, setRewardAmount] = useState('');
+  const [rewardCurrency, setRewardCurrency] = useState(REWARD_CURRENCIES[0]);
   const [isFree, setIsFree] = useState(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isFree && (!reward || Number(reward) <= 0)) {
-      alert('Informe um preço válido para tarefa paga.');
+    const parsedRewardAmount = Number(rewardAmount);
+
+    if (!isFree && (!Number.isInteger(parsedRewardAmount) || parsedRewardAmount <= 0)) {
+      alert('Informe um rewardAmount inteiro positivo para tarefa paga.');
+      return;
+    }
+
+    if (!isFree && !REWARD_CURRENCIES.includes(rewardCurrency)) {
+      alert('Selecione uma currency válida para tarefa paga.');
       return;
     }
 
@@ -24,7 +34,8 @@ export default function NewTask() {
         title,
         description,
         isFree,
-        reward: isFree ? null : reward,
+        rewardAmount: isFree ? null : parsedRewardAmount,
+        rewardCurrency: isFree ? null : rewardCurrency,
       }),
     });
 
@@ -69,28 +80,46 @@ export default function NewTask() {
               checked={isFree}
               onChange={(e) => {
                 setIsFree(e.target.checked);
-                if (e.target.checked) setReward('');
+                if (e.target.checked) {
+                  setRewardAmount('');
+                  setRewardCurrency(REWARD_CURRENCIES[0]);
+                }
               }}
             />
             <span>Tarefa gratuita (duração de 3 dias)</span>
           </label>
 
           <label>
-            Preço
+            Reward amount
             <input
               type="number"
-              min="0"
-              step="0.01"
-              value={reward}
-              onChange={(e) => setReward(e.target.value)}
+              min="1"
+              step="1"
+              value={rewardAmount}
+              onChange={(e) => setRewardAmount(e.target.value)}
               disabled={isFree}
-              placeholder="Ex.: 0.1"
+              placeholder="Ex.: 100"
             />
             <small className="subtitle">
               {isFree
-                ? 'Para tarefa gratuita, o preço fica desativado e a tarefa expira em 3 dias.'
-                : 'Pagamentos entram depois. Por enquanto, isso é só estrutura.'}
+                ? 'Para tarefa gratuita, rewardAmount e rewardCurrency ficam nulos e a tarefa expira em 3 dias.'
+                : 'Tarefas pagas exigem um valor inteiro positivo e uma currency válida.'}
             </small>
+          </label>
+
+          <label>
+            Reward currency
+            <select
+              value={rewardCurrency}
+              onChange={(e) => setRewardCurrency(e.target.value)}
+              disabled={isFree}
+            >
+              {REWARD_CURRENCIES.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="actions">
