@@ -19,6 +19,8 @@ model Task {
   rewardAmount   Int?
   rewardCurrency TaskRewardCurrency?
   isFree         Boolean            @default(true)
+  creatorKeyHash String?
+  creatorLabel   String?
   expiresAt      DateTime?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
