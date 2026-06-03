@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const taskId = parsePositiveIntId(req.query.taskId);
 
   if (!taskId) {
-    return res.status(400).json({ error: 'ID da tarefa invalido' });
+    return res.status(400).json({ error: 'ID da tarefa inválido' });
   }
 
   if (req.method === 'GET') {
@@ -41,14 +41,14 @@ export default async function handler(req, res) {
       });
 
       if (!task) {
-        return res.status(404).json({ error: 'Task not found' });
+        return res.status(404).json({ error: 'Tarefa não encontrada' });
       }
 
       if (!task.isFree) {
         const { creatorKey } = getCreatorCredentials(req);
 
         if (!isTaskCreator(task, creatorKey)) {
-          return res.status(403).json({ error: 'Credencial do criador invalida para listar submissoes desta tarefa paga' });
+          return res.status(403).json({ error: 'Credencial do criador inválida para listar submissões desta tarefa paga' });
         }
       }
 
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const validatedContent = validateRequiredText(
       req.body?.content,
-      'Conteudo da submissao',
+      'Conteúdo da submissão',
       MAX_SUBMISSION_CONTENT_LENGTH,
     );
 
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
       });
 
       if (!task) {
-        return res.status(404).json({ error: 'Task not found' });
+        return res.status(404).json({ error: 'Tarefa não encontrada' });
       }
 
       const submission = await prisma.submission.create({
