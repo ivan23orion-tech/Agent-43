@@ -1,5 +1,10 @@
 import prisma from '../../../lib/prisma';
 import {
+  MAX_TASK_DESCRIPTION_LENGTH,
+  MAX_TASK_TITLE_LENGTH,
+  validateRequiredText,
+} from '../../../lib/api-validation';
+import {
   CREATOR_KEY_HEADER_NAMES,
   CREATOR_LABEL_HEADER_NAMES,
   getCreatorCredentials,
@@ -51,6 +56,17 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const { title, description, rewardAmount, rewardCurrency, isFree } = req.body;
+    const validatedTitle = validateRequiredText(title, 'Titulo', MAX_TASK_TITLE_LENGTH);
+    const validatedDescription = validateRequiredText(description, 'Descricao', MAX_TASK_DESCRIPTION_LENGTH);
+
+    if (validatedTitle.error) {
+      return res.status(400).json({ error: validatedTitle.error });
+    }
+
+    if (validatedDescription.error) {
+      return res.status(400).json({ error: validatedDescription.error });
+    }
+
     const isTaskFree = isFree === true || isFree === 'true';
     const parsedRewardAmount = parseRewardAmount(rewardAmount);
     const normalizedRewardCurrency = typeof rewardCurrency === 'string'
@@ -61,8 +77,8 @@ export default async function handler(req, res) {
       try {
         const task = await prisma.task.create({
           data: {
-            title,
-            description,
+            title: validatedTitle.value,
+            description: validatedDescription.value,
             isFree: true,
             rewardAmount: null,
             rewardCurrency: null,
@@ -97,8 +113,8 @@ export default async function handler(req, res) {
     try {
       const task = await prisma.task.create({
         data: {
-          title,
-          description,
+          title: validatedTitle.value,
+          description: validatedDescription.value,
           isFree: false,
           rewardAmount: parsedRewardAmount,
           rewardCurrency: normalizedRewardCurrency,
