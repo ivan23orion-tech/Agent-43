@@ -1,16 +1,21 @@
 import prisma from '../../../../lib/prisma';
+import { parsePositiveIntId } from '../../../../lib/api-validation';
 import {
   getCreatorCredentials,
   isTaskCreator,
 } from '../../../../lib/task-access';
 
 export default async function handler(req, res) {
-  const { id } = req.query;
+  const submissionId = parsePositiveIntId(req.query.id);
+
+  if (!submissionId) {
+    return res.status(400).json({ error: 'ID da submissao invalido' });
+  }
 
   if (req.method === 'POST') {
     try {
       const submission = await prisma.submission.findUnique({
-        where: { id: parseInt(id, 10) },
+        where: { id: submissionId },
         include: {
           task: {
             select: {
@@ -30,12 +35,12 @@ export default async function handler(req, res) {
         const { creatorKey } = getCreatorCredentials(req);
 
         if (!isTaskCreator(submission.task, creatorKey)) {
-          return res.status(403).json({ error: 'Credencial do criador inválida para aprovar esta submissão' });
+          return res.status(403).json({ error: 'Credencial do criador invalida para aprovar esta submissao' });
         }
       }
 
       const approvedSubmission = await prisma.submission.update({
-        where: { id: parseInt(id, 10) },
+        where: { id: submissionId },
         data: { approved: true },
       });
 
