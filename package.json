@@ -11,7 +11,7 @@
     "cleanup:legacy-free-tasks": "node scripts/delete-legacy-free-tasks.js"
   },
   "dependencies": {
-    "next": "14.0.4",
+    "next": "14.2.35",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "@prisma/client": "^5.12.0"
