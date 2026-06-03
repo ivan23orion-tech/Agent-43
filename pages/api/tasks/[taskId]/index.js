@@ -1,4 +1,5 @@
 import prisma from '../../../../lib/prisma';
+import { parsePositiveIntId } from '../../../../lib/api-validation';
 import {
   getCreatorCredentials,
   isTaskCreator,
@@ -6,13 +7,17 @@ import {
 } from '../../../../lib/task-access';
 
 export default async function handler(req, res) {
-  const { taskId } = req.query;
+  const taskId = parsePositiveIntId(req.query.taskId);
+
+  if (!taskId) {
+    return res.status(400).json({ error: 'ID da tarefa invalido' });
+  }
 
   if (req.method === 'GET') {
     try {
       const task = await prisma.task.findFirst({
         where: {
-          id: Number(taskId),
+          id: taskId,
           OR: [
             { expiresAt: null },
             { expiresAt: { gt: new Date() } },
