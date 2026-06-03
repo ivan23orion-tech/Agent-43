@@ -1,16 +1,35 @@
 import prisma from '../../../../lib/prisma';
 import {
+  MAX_SUBMISSION_CONTENT_LENGTH,
+  parsePositiveIntId,
+  validateRequiredText,
+} from '../../../../lib/api-validation';
+import {
   getCreatorCredentials,
   isTaskCreator,
 } from '../../../../lib/task-access';
 
+function activeTaskWhere(taskId) {
+  return {
+    id: taskId,
+    OR: [
+      { expiresAt: null },
+      { expiresAt: { gt: new Date() } },
+    ],
+  };
+}
+
 export default async function handler(req, res) {
-  const { taskId } = req.query;
+  const taskId = parsePositiveIntId(req.query.taskId);
+
+  if (!taskId) {
+    return res.status(400).json({ error: 'ID da tarefa invalido' });
+  }
 
   if (req.method === 'GET') {
     try {
-      const task = await prisma.task.findUnique({
-        where: { id: Number(taskId) },
+      const task = await prisma.task.findFirst({
+        where: activeTaskWhere(taskId),
         select: {
           id: true,
           isFree: true,
@@ -29,7 +48,7 @@ export default async function handler(req, res) {
         const { creatorKey } = getCreatorCredentials(req);
 
         if (!isTaskCreator(task, creatorKey)) {
-          return res.status(403).json({ error: 'Credencial do criador inválida para listar submissões desta tarefa paga' });
+          return res.status(403).json({ error: 'Credencial do criador invalida para listar submissoes desta tarefa paga' });
         }
       }
 
@@ -41,10 +60,19 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { content } = req.body;
+    const validatedContent = validateRequiredText(
+      req.body?.content,
+      'Conteudo da submissao',
+      MAX_SUBMISSION_CONTENT_LENGTH,
+    );
+
+    if (validatedContent.error) {
+      return res.status(400).json({ error: validatedContent.error });
+    }
+
     try {
-      const task = await prisma.task.findUnique({
-        where: { id: Number(taskId) },
+      const task = await prisma.task.findFirst({
+        where: activeTaskWhere(taskId),
         select: { id: true },
       });
 
@@ -54,8 +82,8 @@ export default async function handler(req, res) {
 
       const submission = await prisma.submission.create({
         data: {
-          taskId: Number(taskId),
-          content,
+          taskId,
+          content: validatedContent.value,
         },
       });
       return res.status(201).json(submission);
