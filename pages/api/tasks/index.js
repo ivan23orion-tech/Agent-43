@@ -56,8 +56,8 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const { title, description, rewardAmount, rewardCurrency, isFree } = req.body;
-    const validatedTitle = validateRequiredText(title, 'Titulo', MAX_TASK_TITLE_LENGTH);
-    const validatedDescription = validateRequiredText(description, 'Descricao', MAX_TASK_DESCRIPTION_LENGTH);
+    const validatedTitle = validateRequiredText(title, 'Título', MAX_TASK_TITLE_LENGTH);
+    const validatedDescription = validateRequiredText(description, 'Descrição', MAX_TASK_DESCRIPTION_LENGTH);
 
     if (validatedTitle.error) {
       return res.status(400).json({ error: validatedTitle.error });
