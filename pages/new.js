@@ -7,6 +7,15 @@ const BLOCKED_REWARD_KEYS = ['.', ',', 'e', 'E', '-', '+'];
 const CREATOR_KEY_STORAGE_KEY = 'agent43.creatorKey';
 const CREATOR_LABEL_STORAGE_KEY = 'agent43.creatorLabel';
 
+async function readErrorMessage(res, fallbackMessage) {
+  try {
+    const data = await res.json();
+    return data?.error || fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
 export default function NewTask() {
   const router = useRouter();
   const [title, setTitle] = useState('');
@@ -88,7 +97,7 @@ export default function NewTask() {
 
       router.push('/');
     } else {
-      alert('Falha ao criar tarefa');
+      alert(await readErrorMessage(res, 'Falha ao criar tarefa'));
     }
   };
 
