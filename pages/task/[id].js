@@ -5,6 +5,15 @@ import { useRouter } from 'next/router';
 const CREATOR_KEY_STORAGE_KEY = 'agent43.creatorKey';
 const CREATOR_LABEL_STORAGE_KEY = 'agent43.creatorLabel';
 
+async function readErrorMessage(res, fallbackMessage) {
+  try {
+    const data = await res.json();
+    return data?.error || fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
 function formatReward(task) {
   if (task.isFree) {
     const expiry = task.expiresAt
@@ -34,6 +43,7 @@ export default function TaskDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [task, setTask] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const [content, setContent] = useState('');
   const [creatorKey, setCreatorKey] = useState('');
   const [creatorLabel, setCreatorLabel] = useState('');
@@ -61,7 +71,15 @@ export default function TaskDetail() {
     const res = await fetch(`/api/tasks/${id}`, {
       headers: creatorHeaders,
     });
+
+    if (!res.ok) {
+      setTask(null);
+      setLoadError(await readErrorMessage(res, 'Falha ao carregar tarefa'));
+      return;
+    }
+
     const data = await res.json();
+    setLoadError('');
     setTask(data);
   };
 
@@ -84,7 +102,7 @@ export default function TaskDetail() {
       await refreshTask();
       setContent('');
     } else {
-      alert('Falha ao enviar submissão');
+      alert(await readErrorMessage(res, 'Falha ao enviar submissão'));
     }
   };
 
@@ -96,10 +114,8 @@ export default function TaskDetail() {
 
     if (res.ok) {
       await refreshTask();
-    } else if (res.status === 403) {
-      alert('Somente o criador autenticado pode aceitar submissões desta tarefa paga.');
     } else {
-      alert('Falha ao aceitar submissão');
+      alert(await readErrorMessage(res, 'Falha ao aceitar submissão'));
     }
   };
 
@@ -124,6 +140,22 @@ export default function TaskDetail() {
     setAuthMessage('Credenciais atualizadas.');
   };
 
+  if (loadError) {
+    return (
+      <main className="container">
+        <section className="card">
+          <h1 className="heading">Tarefa indisponível</h1>
+          <p className="subtitle">{loadError}</p>
+          <div className="actions">
+            <Link href="/" className="button secondary">
+              Voltar para tarefas
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (!task) return <main className="container">Carregando...</main>;
 
   const canViewSubmissions = task.isFree || task.creatorAuthenticated;
@@ -138,7 +170,7 @@ export default function TaskDetail() {
         <p className="subtitle">{formatReward(task)}</p>
 
         {!task.isFree && (
-          <section className="card" style={{ marginTop: '1rem' }}>
+          <section className="creatorPanel">
             <h2 className="sectionTitle">Acesso do criador</h2>
             <p className="subtitle">
               Tarefas pagas exibem as respostas apenas para o criador autenticado.
