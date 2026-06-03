@@ -32,6 +32,12 @@ a {
   border: 1px solid #e2e8f0;
 }
 
+.creatorPanel {
+  margin-top: 1rem;
+  padding: 16px 0 4px;
+  border-top: 1px solid #e2e8f0;
+}
+
 .heading {
   margin: 0 0 8px;
   font-size: clamp(1.8rem, 3vw, 2.4rem);
@@ -108,12 +114,14 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   padding: 10px 12px;
   font: inherit;
+  background: #ffffff;
 }
 
 textarea {
