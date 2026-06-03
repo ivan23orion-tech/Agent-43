@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const submissionId = parsePositiveIntId(req.query.id);
 
   if (!submissionId) {
-    return res.status(400).json({ error: 'ID da submissao invalido' });
+    return res.status(400).json({ error: 'ID da submissão inválido' });
   }
 
   if (req.method === 'POST') {
@@ -28,14 +28,14 @@ export default async function handler(req, res) {
       });
 
       if (!submission) {
-        return res.status(404).json({ error: 'Submission not found' });
+        return res.status(404).json({ error: 'Submissão não encontrada' });
       }
 
       if (!submission.task.isFree) {
         const { creatorKey } = getCreatorCredentials(req);
 
         if (!isTaskCreator(submission.task, creatorKey)) {
-          return res.status(403).json({ error: 'Credencial do criador invalida para aprovar esta submissao' });
+          return res.status(403).json({ error: 'Credencial do criador inválida para aprovar esta submissão' });
         }
       }
 
