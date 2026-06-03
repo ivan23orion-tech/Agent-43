@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const taskId = parsePositiveIntId(req.query.taskId);
 
   if (!taskId) {
-    return res.status(400).json({ error: 'ID da tarefa invalido' });
+    return res.status(400).json({ error: 'ID da tarefa inválido' });
   }
 
   if (req.method === 'GET') {
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       });
 
       if (!task) {
-        return res.status(404).json({ error: 'Task not found' });
+        return res.status(404).json({ error: 'Tarefa não encontrada' });
       }
 
       if (task.isFree) {
