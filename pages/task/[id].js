@@ -25,6 +25,14 @@ function formatReward(task) {
   return `Paga · recompensa: ${task.rewardAmount} ${task.rewardCurrency}`;
 }
 
+function formatReviewStatus(submission) {
+  const status = submission.reviewStatus ?? (submission.approved ? 'ACCEPTED' : 'PENDING');
+
+  if (status === 'ACCEPTED') return 'Aceita';
+  if (status === 'REJECTED') return 'Rejeitada';
+  return 'Pendente';
+}
+
 function buildCreatorHeaders(creatorKey, creatorLabel) {
   const headers = {};
 
@@ -119,6 +127,21 @@ export default function TaskDetail() {
     }
   };
 
+  const handleReject = async (submissionId) => {
+    const reviewNote = window.prompt('Motivo da rejeição (opcional):') ?? '';
+    const res = await fetch(`/api/submissions/${submissionId}/reject`, {
+      method: 'POST',
+      headers: { ...creatorHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewNote }),
+    });
+
+    if (res.ok) {
+      await refreshTask();
+    } else {
+      alert(await readErrorMessage(res, 'Falha ao rejeitar submissão'));
+    }
+  };
+
   const handleCreatorAccessSubmit = async (e) => {
     e.preventDefault();
 
@@ -159,7 +182,7 @@ export default function TaskDetail() {
   if (!task) return <main className="container">Carregando...</main>;
 
   const canViewSubmissions = task.isFree || task.creatorAuthenticated;
-  const canAcceptSubmission = task.isFree || task.creatorAuthenticated;
+  const canReviewSubmission = task.creatorAuthenticated;
   const submissions = task.submissions ?? [];
 
   return (
@@ -173,7 +196,7 @@ export default function TaskDetail() {
           <section className="creatorPanel">
             <h2 className="sectionTitle">Acesso do criador</h2>
             <p className="subtitle">
-              Tarefas pagas exibem as respostas apenas para o criador autenticado.
+              Tarefas pagas exibem e revisam respostas apenas para o criador autenticado.
             </p>
             <form onSubmit={handleCreatorAccessSubmit} className="formGrid">
               <label>
@@ -222,19 +245,29 @@ export default function TaskDetail() {
           <p className="subtitle">Nenhuma submissão ainda.</p>
         ) : (
           <ul className="list">
-            {submissions.map((sub) => (
-              <li key={sub.id} className="listItem">
-                <div>
-                  <p>{sub.content}</p>
-                  <p className="subtitle">Aprovada: {sub.approved ? 'Sim' : 'Não'}</p>
-                </div>
-                {!sub.approved && canAcceptSubmission && (
-                  <button onClick={() => handleAccept(sub.id)} className="button">
-                    Aceitar
-                  </button>
-                )}
-              </li>
-            ))}
+            {submissions.map((sub) => {
+              const isPending = (sub.reviewStatus ?? (sub.approved ? 'ACCEPTED' : 'PENDING')) === 'PENDING';
+
+              return (
+                <li key={sub.id} className="listItem">
+                  <div>
+                    <p>{sub.content}</p>
+                    <p className="subtitle">Revisão: {formatReviewStatus(sub)}</p>
+                    {sub.reviewNote ? <p className="subtitle">Motivo: {sub.reviewNote}</p> : null}
+                  </div>
+                  {isPending && canReviewSubmission && (
+                    <div className="adminActions">
+                      <button onClick={() => handleAccept(sub.id)} className="button">
+                        Aceitar
+                      </button>
+                      <button onClick={() => handleReject(sub.id)} className="button danger">
+                        Rejeitar
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
 
