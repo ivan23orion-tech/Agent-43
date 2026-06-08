@@ -28,10 +28,12 @@ model Task {
 }
 
 model Submission {
-  id        Int      @id @default(autoincrement())
-  taskId    Int
-  content   String
-  createdAt DateTime @default(now())
-  approved  Boolean? @default(false)
-  task      Task     @relation(fields: [taskId], references: [id])
+  id           Int      @id @default(autoincrement())
+  taskId       Int
+  content      String
+  createdAt    DateTime @default(now())
+  approved     Boolean? @default(false)
+  reviewStatus String   @default("PENDING")
+  reviewNote   String?
+  task         Task     @relation(fields: [taskId], references: [id])
 }
