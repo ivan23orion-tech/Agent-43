@@ -1,9 +1,19 @@
 import prisma from '../../../../lib/prisma';
 import { parsePositiveIntId } from '../../../../lib/api-validation';
+import { isAdminRequest } from '../../../../lib/admin-auth';
 import {
   getCreatorCredentials,
   isTaskCreator,
 } from '../../../../lib/task-access';
+
+function canReviewSubmission(req, task) {
+  if (isAdminRequest(req)) {
+    return true;
+  }
+
+  const { creatorKey } = getCreatorCredentials(req);
+  return isTaskCreator(task, creatorKey);
+}
 
 export default async function handler(req, res) {
   const submissionId = parsePositiveIntId(req.query.id);
@@ -31,17 +41,17 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Submissão não encontrada' });
       }
 
-      if (!submission.task.isFree) {
-        const { creatorKey } = getCreatorCredentials(req);
-
-        if (!isTaskCreator(submission.task, creatorKey)) {
-          return res.status(403).json({ error: 'Credencial do criador inválida para aprovar esta submissão' });
-        }
+      if (!canReviewSubmission(req, submission.task)) {
+        return res.status(403).json({ error: 'Credencial inválida para revisar esta submissão' });
       }
 
       const approvedSubmission = await prisma.submission.update({
         where: { id: submissionId },
-        data: { approved: true },
+        data: {
+          approved: true,
+          reviewStatus: 'ACCEPTED',
+          reviewNote: null,
+        },
       });
 
       return res.status(200).json(approvedSubmission);
