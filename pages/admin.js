@@ -30,12 +30,33 @@ function formatTaskType(task) {
   return `Paga · ${task.rewardAmount} ${task.rewardCurrency}`;
 }
 
+function getReviewStatus(submission) {
+  return submission.reviewStatus ?? (submission.approved ? 'ACCEPTED' : 'PENDING');
+}
+
+function formatReviewStatus(submission) {
+  const status = getReviewStatus(submission);
+
+  if (status === 'ACCEPTED') return 'Aceita';
+  if (status === 'REJECTED') return 'Rejeitada';
+  return 'Pendente';
+}
+
+function reviewBadgeClass(submission) {
+  const status = getReviewStatus(submission);
+
+  if (status === 'ACCEPTED') return 'success';
+  if (status === 'REJECTED') return 'dangerBadge';
+  return 'warning';
+}
+
 export default function AdminPage() {
   const [adminToken, setAdminToken] = useState('');
   const [tasks, setTasks] = useState([]);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState(null);
+  const [reviewingSubmissionId, setReviewingSubmissionId] = useState(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -122,6 +143,31 @@ export default function AdminPage() {
     setMessage(`Tarefa apagada com ${data.deletedSubmissions} submissão(ões).`);
   };
 
+  const reviewSubmission = async (submission, action) => {
+    const reviewNote = action === 'reject'
+      ? window.prompt('Motivo da rejeição (opcional):') ?? ''
+      : '';
+
+    setReviewingSubmissionId(submission.id);
+    setMessage('');
+
+    const res = await fetch(`/api/submissions/${submission.id}/${action === 'reject' ? 'reject' : 'accept'}`, {
+      method: 'POST',
+      headers: { ...adminHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewNote }),
+    });
+
+    setReviewingSubmissionId(null);
+
+    if (!res.ok) {
+      setMessage(await readErrorMessage(res, 'Falha ao revisar submissão.'));
+      return;
+    }
+
+    await loadTasks();
+    setMessage(action === 'reject' ? 'Submissão rejeitada.' : 'Submissão aceita.');
+  };
+
   return (
     <main className="container">
       <section className="card">
@@ -171,7 +217,7 @@ export default function AdminPage() {
           <ul className="list adminList">
             {tasks.map((task) => (
               <li key={task.id} className="listItem adminListItem">
-                <div>
+                <div className="adminTaskBody">
                   <div className="badgeRow compact">
                     <span className="badge">#{task.id}</span>
                     <span className={`badge ${task.status === 'expired' ? 'warning' : 'success'}`}>
@@ -182,6 +228,50 @@ export default function AdminPage() {
                   <p className="taskTitle">{task.title}</p>
                   <p className="taskMeta">{formatTaskType(task)}</p>
                   <p className="taskMeta">Criada em {formatDate(task.createdAt)}</p>
+
+                  {task.submissions?.length > 0 && (
+                    <div className="submissionReviewList">
+                      <h3 className="compactTitle">Submissões</h3>
+                      {task.submissions.map((submission) => {
+                        const isPending = getReviewStatus(submission) === 'PENDING';
+
+                        return (
+                          <div key={submission.id} className="submissionReviewItem">
+                            <div className="badgeRow compact">
+                              <span className="badge">Submissão #{submission.id}</span>
+                              <span className={`badge ${reviewBadgeClass(submission)}`}>
+                                {formatReviewStatus(submission)}
+                              </span>
+                            </div>
+                            <p>{submission.content}</p>
+                            {submission.reviewNote ? (
+                              <p className="taskMeta">Motivo: {submission.reviewNote}</p>
+                            ) : null}
+                            {isPending && (
+                              <div className="adminActions inlineActions">
+                                <button
+                                  type="button"
+                                  className="button"
+                                  onClick={() => reviewSubmission(submission, 'accept')}
+                                  disabled={reviewingSubmissionId === submission.id}
+                                >
+                                  Aceitar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="button danger"
+                                  onClick={() => reviewSubmission(submission, 'reject')}
+                                  disabled={reviewingSubmissionId === submission.id}
+                                >
+                                  Rejeitar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div className="adminActions">
                   <Link href={`/task/${task.id}`} className="button secondary">
