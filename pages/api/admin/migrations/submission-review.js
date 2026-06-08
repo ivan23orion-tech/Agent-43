@@ -1,5 +1,5 @@
-import prisma from '../../../../../lib/prisma';
-import { requireAdmin } from '../../../../../lib/admin-auth';
+import prisma from '../../../../lib/prisma';
+import { requireAdmin } from '../../../../lib/admin-auth';
 
 export default async function handler(req, res) {
   if (!requireAdmin(req, res)) {
