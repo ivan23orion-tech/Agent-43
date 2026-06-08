@@ -20,15 +20,17 @@ export default async function handler(req, res) {
       const tasks = await prisma.task.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
-          _count: { select: { submissions: true } },
+          submissions: {
+            orderBy: { createdAt: 'desc' },
+          },
         },
       });
 
       return res.status(200).json({
         tasks: tasks.map((task) => ({
-          ...serializeTask(task),
+          ...serializeTask(task, { includeSubmissions: true }),
           status: getTaskStatus(task),
-          submissionCount: task._count.submissions,
+          submissionCount: task.submissions.length,
         })),
       });
     } catch (error) {
